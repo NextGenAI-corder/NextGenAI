@@ -1,0 +1,7 @@
+# FastAPI 側（main.py）
+from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/fortune")
+def get_fortune(name: str):
+    return {"result": f"{name}さんの今日の運勢は大吉です！"}

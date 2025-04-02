@@ -1,0 +1,10 @@
+import (
+  "fmt"
+  "net/http"
+)
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Xからのリクエストを受信しました")
+  w.WriteHeader(http.StatusOK)
+  fmt.Fprintf(w, "OK")
+}

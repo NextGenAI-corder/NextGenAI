@@ -1,0 +1,30 @@
+func chatWithGPT(prompt string) string {
+  apiKey := os.Getenv("OPENAI_API_KEY")
+
+  data := map[string]interface{}{
+    "model": "gpt-3.5-turbo",
+    "messages": []map[string]string{
+      {"role": "user", "content": prompt},
+    },
+  }
+
+  payload, _ := json.Marshal(data)
+
+  req, _ := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(payload))
+  req.Header.Set("Content-Type", "application/json")
+  req.Header.Set("Authorization", "Bearer "+apiKey)
+
+  client := &http.Client{}
+  res, err := client.Do(req)
+  if err != nil {
+    fmt.Println("エラー:", err)
+    return ""
+  }
+  defer res.Body.Close()
+
+  var result map[string]interface{}
+  json.NewDecoder(res.Body).Decode(&result)
+
+  msg := result["choices"].([]interface{})[0].(map[string]interface{})["message"].(map[string]interface{})["content"].(string)
+  return msg
+}

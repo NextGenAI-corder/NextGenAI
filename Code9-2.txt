@@ -1,0 +1,6 @@
+# Flask 側（Botサーバー）
+import requests
+user_name = "山田"
+response = requests.get(f"https://yourapi.com/fortune?name={user_name}")
+result = response.json()["result"]
+reply_message = result

@@ -1,0 +1,7 @@
+import (
+  "os"
+)
+
+var (
+  bearerToken = os.Getenv("X_BEARER_TOKEN") // 事前に export X_BEARER_TOKEN=xxx などで設定
+)

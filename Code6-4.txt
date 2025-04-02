@@ -1,0 +1,25 @@
+type ReplyMessage struct {
+  Type string `json:"type"`
+  Text string `json:"text"`
+}
+
+type ReplyPayload struct {
+  ReplyToken string         `json:"replyToken"`
+  Messages   []ReplyMessage `json:"messages"`
+}
+
+func sendReply(replyToken string, message string) error {
+  payload := ReplyPayload{
+    ReplyToken: replyToken,
+    Messages:   []ReplyMessage{{Type: "text", Text: message}},
+  }
+  jsonData, _ := json.Marshal(payload)
+
+  req, _ := http.NewRequest("POST", "https://api.twitter.com/2/direct_messages/events/new.json", bytes.NewBuffer(jsonData))
+  req.Header.Set("Content-Type", "application/json")
+  req.Header.Set("Authorization", "Bearer " + bearerToken)
+
+  client := &http.Client{}
+  _, err := client.Do(req)
+  return err
+}

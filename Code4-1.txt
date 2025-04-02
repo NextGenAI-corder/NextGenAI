@@ -1,0 +1,17 @@
+package main
+
+import (
+  "fmt"
+  "net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("リクエスト受信！")
+  fmt.Fprint(w, "OK")
+}
+
+func main() {
+  http.HandleFunc("/", handler)
+  fmt.Println("サーバー起動 :5000")
+  http.ListenAndServe(":5000", nil)
+}

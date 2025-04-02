@@ -1,0 +1,5 @@
+func main() {
+  http.HandleFunc("/", webhookHandler)
+  fmt.Println("X Bot サーバー起動中 :5000")
+  http.ListenAndServe(":5000", nil)
+}
