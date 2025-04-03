@@ -1,17 +1,39 @@
 from flask import Flask, request
 import json
 import requests
+import os
 
 app = Flask(__name__)
 
 # セキュリティのため、Xのトークンは環境変数から取得するのが推奨です
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+def chat_with_gpt(user_message):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    }
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": user_message}]
+    }
+    res = requests.post("https://api.openai.com/v1/chat/completions",
+                        headers=headers, data=json.dumps(data))
+    return res.json()["choices"][0]["message"]["content"]
 
 @app.route("/", methods=["POST"])
 def webhook():
     data = request.get_json()
     print("受信:", data)
-    # TODO: Xのイベント構造に合わせて処理を追加
+
+    # Xの受信メッセージから本文を取得し、ChatGPTへ送信
+    user_message = data.get("text", "")
+    reply = chat_with_gpt(user_message)
+
+    # 応答を表示（実際にはX APIを使ってDMやリプライを送信）
+    print("ChatGPT応答:", reply)
+
     return "OK"
 
 if __name__ == '__main__':
