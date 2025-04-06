@@ -3,10 +3,13 @@ def chat_with_gpt(user_message):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {YOUR_OPENAI_API_KEY}"
     }
+
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": user_message}]
     }
+
     res = requests.post("https://api.openai.com/v1/chat/completions",
                         headers=headers, data=json.dumps(data))
+
     return res.json()["choices"][0]["message"]["content"]

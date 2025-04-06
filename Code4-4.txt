@@ -1,12 +1,13 @@
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-  var body map[string]interface{}
-  json.NewDecoder(r.Body).Decode(&body)
-  events := body["events"].([]interface{})
-  event := events[0].(map[string]interface{})
+    var body map[string]interface{}
+    json.NewDecoder(r.Body).Decode(&body)
 
-  userMessage := event["message"].(map[string]interface{})["text"].(string)
-  replyToken := event["replyToken"].(string)
+    events := body["events"].([]interface{})
+    event := events[0].(map[string]interface{})
 
-  response := chatWithGPT(userMessage)
-  sendReply(replyToken, response)
+    userMessage := event["message"].(map[string]interface{})["text"].(string)
+    replyToken := event["replyToken"].(string)
+
+    response := chatWithGPT(userMessage)
+    sendReply(replyToken, response)
 }
