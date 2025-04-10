@@ -1,25 +1,33 @@
+// 返信メッセージの構造体。メッセージのタイプと内容を保持する
 type ReplyMessage struct {
-  Type string `json:"type"`
-  Text string `json:"text"`
+  Type string `json:"type"`  // メッセージの種類（例えば、「text」）
+  Text string `json:"text"`  // メッセージの内容
 }
 
+// リプライを送信するためのペイロード構造体
 type ReplyPayload struct {
-  ReplyToken string         `json:"replyToken"`
-  Messages   []ReplyMessage `json:"messages"`
+  ReplyToken string         `json:"replyToken"`  // 返信対象のトークン（元ツイートID）
+  Messages   []ReplyMessage `json:"messages"`    // 送信するメッセージのリスト
 }
 
+// X APIにリプライを送信する関数。返信トークンとメッセージを引数として受け取る
 func sendReply(replyToken string, message string) error {
+  // リプライ用のペイロードを作成
   payload := ReplyPayload{
-    ReplyToken: replyToken,
-    Messages:   []ReplyMessage{{Type: "text", Text: message}},
+    ReplyToken: replyToken,  // 返信対象ツイートのID
+    Messages:   []ReplyMessage{{Type: "text", Text: message}},  // 送信するメッセージ
   }
+
+  // ペイロードをJSON形式にエンコード
   jsonData, _ := json.Marshal(payload)
 
+  // X APIにPOSTリクエストを送信
   req, _ := http.NewRequest("POST", "https://api.twitter.com/2/direct_messages/events/new.json", bytes.NewBuffer(jsonData))
-  req.Header.Set("Content-Type", "application/json")
-  req.Header.Set("Authorization", "Bearer " + bearerToken)
+  req.Header.Set("Content-Type", "application/json")  // リクエストのContent-TypeをJSONに設定
+  req.Header.Set("Authorization", "Bearer " + bearerToken)  // 認証トークンをヘッダーに設定
 
+  // HTTPクライアントでリクエストを実行
   client := &http.Client{}
-  _, err := client.Do(req)
-  return err
+  _, err := client.Do(req)  // リクエストを送信
+  return err  // エラーが発生した場合はエラーを返す
 }

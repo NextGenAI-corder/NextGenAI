@@ -1,20 +1,32 @@
-from flask import Flask, request
-import json
-import requests
-import os
+import time  # timeライブラリをインポート（sleepを使うため）
 
-app = Flask(__name__)
+# ユーザーからのメンションを取得する関数
+def get_mentions():
+    headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}  # X APIにアクセスするための認証ヘッダー
+    url = "https://api.twitter.com/2/tweets/search/recent?query=@your_bot_handle"  # @your_bot_handle（自分のBotのハンドル）を検索するURL
 
-# セキュリティのため、Xのトークンは環境変数から取得するのが推奨です
-BEARER_TOKEN = os.getenv("BEARER_TOKEN")
+    res = requests.get(url, headers=headers)  # GETリクエストでXからメンションデータを取得
+    return res.json().get("data", [])  # レスポンスをJSONとして処理し、"data"キーの値（ツイート）を返す。データが無ければ空リストを返す。
 
-@app.route("/", methods=["POST"])
-def webhook():
-    data = request.get_json()
-    print("受信:", data)
+# 取得したメンションにリプライを送る関数
+def send_reply(tweet_id, message):
+    headers = {
+        "Authorization": f"Bearer {BEARER_TOKEN}",  # 認証ヘッダー
+        "Content-Type": "application/json"  # リクエストボディがJSON形式であることを指定
+    }
+    payload = {
+        "text": message,  # 返信メッセージ
+        "reply": {"in_reply_to_tweet_id": tweet_id}  # 返信する元ツイートのIDを指定
+    }
+    url = "https://api.twitter.com/2/tweets"  # Xにリプライを送るためのURL
+    requests.post(url, headers=headers, json=payload)  # POSTリクエストでリプライを送信
 
-    # TODO: Xのイベント構造に合わせて処理を追加
-    return "OK"
-
-if __name__ == '__main__':
-    app.run(port=5000)
+# メインの処理を行う関数
+def main():
+    while True:  # 無限ループで定期的にメンションをチェック
+        tweets = get_mentions()  # メンションを取得
+        for tweet in tweets:  # 取得したメンションを順に処理
+            user_message = tweet["text"]  # ツイートの内容（メッセージ）
+            reply = chat_with_gpt(user_message)  # メッセージをChatGPTに送って返信を取得
+            send_reply(tweet["id"], reply)  # 取得した返信を元のツイートにリプライとして送信
+        time.sleep(30)  # 30秒間隔でメンションを再チェック
