@@ -1,32 +1,38 @@
-import time  # timeライブラリをインポート（sleepを使うため）
 
-# ユーザーからのメンションを取得する関数
+import time
+import requests
+
+BEARER_TOKEN = "YOUR_TWITTER_BEARER_TOKEN"
+
 def get_mentions():
-    headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}  # X APIにアクセスするための認証ヘッダー
-    url = "https://api.twitter.com/2/tweets/search/recent?query=@your_bot_handle"  # @your_bot_handle（自分のBotのハンドル）を検索するURL
+    headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}
+    url = "https://api.twitter.com/2/tweets/search/recent?query=@your_bot_handle"
+    res = requests.get(url, headers=headers)
+    return res.json().get("data", [])
 
-    res = requests.get(url, headers=headers)  # GETリクエストでXからメンションデータを取得
-    return res.json().get("data", [])  # レスポンスをJSONとして処理し、"data"キーの値（ツイート）を返す。データが無ければ空リストを返す。
-
-# 取得したメンションにリプライを送る関数
 def send_reply(tweet_id, message):
     headers = {
-        "Authorization": f"Bearer {BEARER_TOKEN}",  # 認証ヘッダー
-        "Content-Type": "application/json"  # リクエストボディがJSON形式であることを指定
+        "Authorization": f"Bearer {BEARER_TOKEN}",
+        "Content-Type": "application/json"
     }
     payload = {
-        "text": message,  # 返信メッセージ
-        "reply": {"in_reply_to_tweet_id": tweet_id}  # 返信する元ツイートのIDを指定
+        "text": message,
+        "reply": {"in_reply_to_tweet_id": tweet_id}
     }
-    url = "https://api.twitter.com/2/tweets"  # Xにリプライを送るためのURL
-    requests.post(url, headers=headers, json=payload)  # POSTリクエストでリプライを送信
+    url = "https://api.twitter.com/2/tweets"
+    requests.post(url, headers=headers, json=payload)
 
-# メインの処理を行う関数
+def chat_with_gpt(user_message):
+    return f"これは仮の返信です：{user_message}"
+
 def main():
-    while True:  # 無限ループで定期的にメンションをチェック
-        tweets = get_mentions()  # メンションを取得
-        for tweet in tweets:  # 取得したメンションを順に処理
-            user_message = tweet["text"]  # ツイートの内容（メッセージ）
-            reply = chat_with_gpt(user_message)  # メッセージをChatGPTに送って返信を取得
-            send_reply(tweet["id"], reply)  # 取得した返信を元のツイートにリプライとして送信
-        time.sleep(30)  # 30秒間隔でメンションを再チェック
+    while True:
+        tweets = get_mentions()
+        for tweet in tweets:
+            user_message = tweet["text"]
+            reply = chat_with_gpt(user_message)
+            send_reply(tweet["id"], reply)
+        time.sleep(30)
+
+if __name__ == "__main__":
+    main()

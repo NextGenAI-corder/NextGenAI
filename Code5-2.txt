@@ -1,29 +1,21 @@
-import requests  # requestsモジュールのインポート
-import json  # jsonモジュールのインポート
+
+import requests
+import json
 
 def chat_with_gpt(user_message):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {YOUR_OPENAI_API_KEY}"
     }
-
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [{"role": "user", "content": user_message}]
     }
-
     try:
-        # POSTリクエストでOpenAI APIにデータを送信
         res = requests.post("https://api.openai.com/v1/chat/completions",
                             headers=headers, data=json.dumps(data))
-
-        # レスポンスが正常かどうかを確認
-        res.raise_for_status()  # ここでエラーが発生した場合、例外がスローされる
-
-        # レスポンスから返答を取得
+        res.raise_for_status()
         return res.json()["choices"][0]["message"]["content"]
-    
     except requests.exceptions.RequestException as e:
-        # エラー発生時にエラーメッセージを表示
         print(f"リクエストエラー: {e}")
         return None

@@ -1,42 +1,99 @@
 package main
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "os"
+	"bytes"         // リクエストボディをバッファに格納するため
+	"encoding/json" // JSONへのエンコードに使用
+	"fmt"           // ログ出力などに使用
+	"net/http"      // HTTPリクエストを送るためのパッケージ
+	"os"            // 環境変数からトークンを取得するため
 )
 
+// Message は LINE API に送信するメッセージ1件の構造
 type Message struct {
-    Type string `json:"type"`
-    Text string `json:"text"`
+	Type string `json:"type"` // メッセージタイプ（通常は "text"）
+	Text string `json:"text"` // ユーザーに送る本文
 }
 
+// accessToken は LINE のチャネルアクセストークンを環境変数から取得
 var accessToken = os.Getenv("LINE_ACCESS_TOKEN")
 
+// Reply は LINE API の返信フォーマットを表現する構造体
 type Reply struct {
-    ReplyToken string   `json:"replyToken"`
-    Messages   []Message `json:"messages"`
+	ReplyToken string    `json:"replyToken"` // ユーザーから送られた返信用トークン
+	Messages   []Message `json:"messages"`   // 返信するメッセージ（配列）
 }
 
+// sendReply は replyToken に対して message を返信する
 func sendReply(replyToken, message string) {
-    reply := Reply{
-        ReplyToken: replyToken,
-        Messages:   []Message{{Type: "text", Text: message}},
-    }
+	// 返信用のメッセージを構成
+	reply := Reply{
+		ReplyToken: replyToken,
+		Messages:   []Message{{Type: "text", Text: message}},
+	}
 
-    payload, _ := json.Marshal(reply)
-    req, _ := http.NewRequest("POST", "https://api.line.me/v2/Bot/message/reply", bytes.NewBuffer(payload))
-    req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("Authorization", "Bearer " + accessToken)
+	// JSONに変換
+	payload, err := json.Marshal(reply)
+	if err != nil {
+		fmt.Println("JSON変換エラー:", err)
+		return
+	}
 
-    client := &http.Client{}
-    res, err := client.Do(req)
-    if err != nil {
-        fmt.Println("送信エラー:", err)
-        return
-    }
-    defer res.Body.Close()
-    fmt.Println("レスポンスステータス:", res.Status)
+	// HTTP POSTリクエストを作成
+	req, err := http.NewRequest("POST", "https://api.line.me/v2/bot/message/reply", bytes.NewBuffer(payload))
+	if err != nil {
+		fmt.Println("リクエスト作成エラー:", err)
+		return
+	}
+
+	// ヘッダー設定
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer " + accessToken)
+
+	// リクエストを送信するHTTPクライアントを作成
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println("送信エラー:", err)
+		return
+	}
+	defer res.Body.Close()
+
+	// レスポンスステータスを表示
+	fmt.Println("レスポンスステータス:", res.Status)
 }
+
+// webhookHandler はLINEからのWebhookリクエストを受け取り、返信する
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	// リクエストのbodyからデータを解析
+	var requestBody map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// ここで `replyToken` を抽出（LINEから送られる実際のトークン）
+	replyToken := requestBody["events"].([]interface{})[0].(map[string]interface{})["replyToken"].(string)
+
+	// メッセージの内容を決める
+	message := "こんにちは！LINE Botからの返信です。"
+
+	// メッセージを返信
+	sendReply(replyToken, message)
+
+	// レスポンス
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "OK")
+}
+
+// main 関数でサーバーを起動
+func main() {
+	// Webhook用のエンドポイントを定義
+	http.HandleFunc("/webhook", webhookHandler)
+
+	// サーバーをポート5000で起動
+	fmt.Println("LINE Bot サーバー起動中 :5000")
+	http.ListenAndServe(":5000", nil)
+}
+
+
