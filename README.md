@@ -9,6 +9,13 @@
 ---
 ---
 
+📘 【重要なお知らせ】  
+書籍掲載コードでは `openai.Completion.create()` を使用していましたが、  
+最新版のOpenAIライブラリ（v1.0以降）では廃止されており、以下のように修正が必要です。
+
+👉 修正ガイドはこちら → [OpenAI Completion廃止対応](./openai_api_fix.md)
+---
+
 📘 LINE BOT開発における重要な仕様変更（2024年4月以降）について
 
 LINE Developers からの直接設定ができなくなったため、  
