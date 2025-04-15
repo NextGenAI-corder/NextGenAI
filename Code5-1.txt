@@ -1,15 +1,20 @@
-
 import time
 import requests
+import json
+import os
 
-BEARER_TOKEN = "YOUR_TWITTER_BEARER_TOKEN"
+# 各種APIキーの設定（※ご自身の値で環境変数などから取得して下さい）
+BEARER_TOKEN = os.getenv("BEARER_TOKEN") # YOUR_TWITTER_BEARER_TOKEN
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") # YOUR_OPENAI_API_KEY
 
+# 📨 自分宛てのメンションを取得
 def get_mentions():
     headers = {"Authorization": f"Bearer {BEARER_TOKEN}"}
-    url = "https://api.twitter.com/2/tweets/search/recent?query=@your_bot_handle"
+    url = "https://api.twitter.com/2/tweets/search/recent?query=@YourBotHandle"  # ← No.3: ハンドル名は必ず書き換える
     res = requests.get(url, headers=headers)
     return res.json().get("data", [])
 
+# 💬 メンションに返信を投稿
 def send_reply(tweet_id, message):
     headers = {
         "Authorization": f"Bearer {BEARER_TOKEN}",
@@ -22,9 +27,26 @@ def send_reply(tweet_id, message):
     url = "https://api.twitter.com/2/tweets"
     requests.post(url, headers=headers, json=payload)
 
+# 🤖 ChatGPTと連携し応答を生成（Code5-2の内容を統合／No.1・No.2）
 def chat_with_gpt(user_message):
-    return f"これは仮の返信です：{user_message}"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    }
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": user_message}]
+    }
+    try:
+        res = requests.post("https://api.openai.com/v1/chat/completions",
+                            headers=headers, data=json.dumps(data))
+        res.raise_for_status()
+        return res.json()["choices"][0]["message"]["content"]
+    except requests.exceptions.RequestException as e:
+        print(f"リクエストエラー: {e}")
+        return None
 
+# 🚀 メイン処理：メンションを定期取得 → ChatGPTで返信 → 投稿
 def main():
     while True:
         tweets = get_mentions()
@@ -32,6 +54,14 @@ def main():
             user_message = tweet["text"]
             reply = chat_with_gpt(user_message)
             send_reply(tweet["id"], reply)
+            # ツイートIDを取得（"id" または "id_str"）
+            tweet_id = str(tweet.get("id") or tweet.get("id_str"))
+            if tweet_id in replied_ids: # 同じツイートに重複返信しない対策
+                continue  # すでに返信済みならスキップ
+            user_message = tweet["text"]
+            reply = chat_with_gpt(user_message)
+            send_reply(tweet_id, reply)
+            replied_ids.add(tweet_id)  # 返信IDを登録
         time.sleep(30)
 
 if __name__ == "__main__":
