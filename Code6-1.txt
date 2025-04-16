@@ -1,7 +1,59 @@
 import (
-  "os"
+  "bytes"         // バイト配列をバッファとして扱うためのパッケージ
+  "encoding/json" // JSONのエンコードとデコードを行うためのパッケージ
+  "net/http"      // HTTP通信を行うためのパッケージ
+  "os"            // 環境変数を取得するためのパッケージ
 )
 
-var (
-  bearerToken = os.Getenv("X_BEARER_TOKEN") // 事前に export X_BEARER_TOKEN=xxx などで設定
-)
+// OpenAIに送るリクエストデータの構造体
+type ChatRequest struct {
+  Model    string    `json:"model"`     // 使用するモデル名（例: gpt-3.5-turbo）
+  Messages []Message `json:"messages"`  // メッセージのやり取り履歴（複数可）
+}
+
+// ユーザーまたはAIの個別メッセージを表す構造体
+type Message struct {
+  Role    string `json:"role"`    // 発言者の役割（user, assistant など）
+  Content string `json:"content"` // 実際のメッセージテキスト
+}
+
+// OpenAIから返されるレスポンスデータの構造体
+type ChatResponse struct {
+  Choices []struct {
+    Message Message `json:"message"` // GPTからの応答メッセージ本体
+  } `json:"choices"`
+}
+
+// ユーザーメッセージをGPTに送信し、レスポンスを受け取る関数
+func chatWithGPT(userMessage string) (string, error) {
+  // リクエスト用のデータ構築
+  payload := ChatRequest{
+    Model: "gpt-3.5-turbo",
+    Messages: []Message{{Role: "user", Content: userMessage}},
+  }
+
+  // 構造体をJSONに変換
+  jsonData, _ := json.Marshal(payload)
+
+  // POSTリクエストを作成（OpenAI API エンドポイント）
+  req, _ := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+
+  // 必要なHTTPヘッダーを設定
+  req.Header.Set("Content-Type", "application/json") // リクエストボディはJSON形式
+  req.Header.Set("Authorization", "Bearer " + os.Getenv("OPENAI_API_KEY")) // 認証用APIキーをセット
+
+  // HTTPクライアントでリクエストを送信
+  client := &http.Client{}
+  res, err := client.Do(req)
+  if err != nil {
+    return "", err // 通信失敗時はエラーを返す
+  }
+  defer res.Body.Close() // 通信終了後にレスポンスボディをクローズ
+
+  // レスポンスを構造体にデコード
+  var result ChatResponse
+  json.NewDecoder(res.Body).Decode(&result)
+
+  // 最初の応答メッセージの内容を返す
+  return result.Choices[0].Message.Content, nil
+}
