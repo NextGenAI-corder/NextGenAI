@@ -27,7 +27,7 @@ LINE Developers からの直接設定ができなくなったため、
 
 📘 条件によって応答を変えるプロンプトをJSONから読込むコード
 
-👉 [条件応答型JSONプロンプト＆読込み関数](./json_chatgpt_prompt.md)
+👉 [条件応答型JSONプロンプト＆読込み関数](./chatgpt_set_prompt.md)
 
 ---
 
