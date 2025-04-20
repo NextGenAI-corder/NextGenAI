@@ -1,6 +1,37 @@
-# Flask 側（Botサーバー）
-import requests
-user_name = "山田"
-response = requests.get(f"https://yourapi.com/fortune?name={user_name}")
-result = response.json()["result"]
-reply_message = result
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+)
+
+type QA struct {
+	Condition string `json:"条件"`
+	Response  string `json:"応答"`
+}
+
+func main() {
+	data, err := os.ReadFile("prompt_data.json")
+	if err != nil {
+		panic(err)
+	}
+
+	var qas []QA
+	if err := json.Unmarshal(data, &qas); err != nil {
+		panic(err)
+	}
+
+	fmt.Print("質問をどうぞ：")
+	var input string
+	fmt.Scanln(&input)
+
+	for _, qa := range qas {
+		if strings.Contains(input, qa.Condition) {
+			fmt.Println("BOTの応答：", qa.Response)
+			return
+		}
+	}
+	fmt.Println("すみません、その質問にはまだ対応していません。")
+}

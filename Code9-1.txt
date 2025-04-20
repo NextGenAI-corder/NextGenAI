@@ -1,7 +1,18 @@
-# FastAPI 側（main.py）
-from fastapi import FastAPI
-app = FastAPI()
+import json
 
-@app.get("/fortune")
-def get_fortune(name: str):
-    return {"result": f"{name}さんの今日の運勢は大吉です！"}
+def load_prompt(filename):
+    with open(filename, encoding="utf-8") as f:
+        return json.load(f)
+
+def get_response(prompt_data, user_input):
+    for item in prompt_data:
+        if item["条件"] in user_input:
+            return item["応答"]
+    return "すみません、その質問にはまだ対応していません。"
+
+if __name__ == "__main__":
+    prompt_data = load_prompt("prompt_data.json")
+    user_input = input("質問をどうぞ：")
+    response = get_response(prompt_data, user_input)
+    print("BOTの応答：", response)
+	
